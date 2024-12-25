@@ -1,3 +1,10 @@
+# Лабораторная работа 3 по дисциплине МРЗвИС
+# Выполнена студентом группы 121702 БГУИР Кимстач Д.Б.
+# Реализация сети Джордана
+# Вариант 11
+# Ссылки на источники:
+# https://rep.bstu.by/bitstream/handle/data/30365/471-1999.pdf?sequence=1&isAllowed=y
+
 from src.jordan_network import generate_train_matrix, generate_train_matrix_result, JordanNetwork
 
 
@@ -47,11 +54,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-"""
-0.5 - 0
-0.1 - 0
-0.01 - 2
-0.001 - 4
-0.0001 - 4
-"""
