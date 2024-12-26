@@ -37,9 +37,6 @@ def mean_absolute_percentage_error(y_true, y_pred):
 
 
 def mean_absolute_error(y_true, y_pred):
-    """
-    Вычисляет среднюю абсолютную ошибку (MAE).
-    """
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
     return np.mean(np.abs(y_true - y_pred))
@@ -68,21 +65,12 @@ def create_dataset(seq, window_size):
 if __name__ == '__main__':
     sequence = generate_arithmetic_sequence(1, 3, 30)
     print("\nИзначальная последовательность:", sequence)
-
     sequence_norm, mean, std = normalize(sequence)
-    print("\nНормализованная последовательность:", sequence_norm)
-
     window_size = 5
     X, Y = create_dataset(sequence_norm, window_size)
     print("\nПримеры входных данных (X) и целевых значений (Y):")
-    print("X:", X)
-    print("Y:", Y)
-
-    print("\nX.shape =", X.shape, "Y.shape =", Y.shape)
-
     net = JordanNetwork(input_size=1, hidden_size=10, output_size=1, learning_rate=1e-4, alpha=0.01)
-    print("\nОбучение")
-    losses = net.train(X, Y, max_epochs=1000, target_loss=1e-4)
+    losses = net.train(X, Y, max_epochs=1000, target_loss=1e-8)
 
     predict_steps = window_size
     mape_values = []  # список для хранения MAPE
@@ -111,8 +99,4 @@ if __name__ == '__main__':
 
         mape_values.append(local_mape)
         print(f"  MAE: {local_mae:.2f}, MAPE: {local_mape:.2f}%")
-
-    if mape_values:
         print(f"\nСредняя абсолютная процентная ошибка (MAPE) по всем окнам: {np.mean(mape_values):.2f}%")
-    else:
-        print("Не было достаточно данных для формирования окон и прогноза.")

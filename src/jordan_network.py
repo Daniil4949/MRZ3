@@ -37,13 +37,11 @@ class JordanNetwork:
         self.x = x
         self.context = context
 
-        # Скрытое состояние
         self.h_raw = np.dot(self.W_ih, self.x) + np.dot(self.W_cy, self.context) + self.b_h
         self.h = leaky_relu(self.h_raw, self.alpha)
 
-        # Выход
         self.y_raw = np.dot(self.W_hy, self.h) + self.b_y
-        self.y = self.y_raw  # линейный выход
+        self.y = self.y_raw
 
         return self.y, self.h
 
@@ -98,12 +96,6 @@ class JordanNetwork:
         return losses
 
     def predict(self, initial_window, predict_steps, window_size):
-        """
-        Прогнозирование следующих значений.
-        initial_window: список или массив длиной window_size
-        predict_steps: сколько значений хотим спрогнозировать
-        """
-        # Преобразуем initial_window в список, если это не так
         if isinstance(initial_window, np.ndarray):
             window = initial_window.copy().tolist()
         else:
