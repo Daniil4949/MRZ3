@@ -62,12 +62,12 @@ class JordanNetwork:
 
     def train(self, X, Y, max_epochs=10000, target_loss=1e-8):
         losses = []
+        # Исправлена инициализация контекстного слоя
+        context = np.zeros((self.output_size, 1))
 
         for epoch in range(max_epochs):
             total_loss = 0
             for i in range(len(X)):
-                context = np.zeros((self.output_size, 1))
-
                 window = X[i]
                 target = np.array([[Y[i]]])
 

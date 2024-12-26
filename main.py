@@ -68,8 +68,8 @@ if __name__ == '__main__':
     window_size = 5
     X, Y = create_dataset(sequence_norm, window_size)
     print("\nПримеры входных данных и  ожидаемых значений:")
-    net = JordanNetwork(input_size=1, hidden_size=10, output_size=1, learning_rate=1e-4, alpha=0.01)
-    losses = net.train(X, Y, max_epochs=1000, target_loss=1e-8)
+    net = JordanNetwork(input_size=1, hidden_size=20, output_size=1, learning_rate=1e-4, alpha=0.01)
+    losses = net.train(X, Y, max_epochs=3000, target_loss=1e-8)
 
     predict_steps = window_size
     mape_values = []
@@ -87,6 +87,12 @@ if __name__ == '__main__':
         print(f"Прогноз на {predict_steps} шагов: {preds}")
 
         expected = sequence[start_idx + window_size: start_idx + window_size + predict_steps]
+
+        if len(expected) != len(preds):
+            min_len = min(len(expected), len(preds))
+            expected = expected[:min_len]
+            preds = preds[:min_len]
+
         print(f"Ожидаемые значения: {expected}")
         local_mape = mean_absolute_percentage_error(expected, preds)
 
