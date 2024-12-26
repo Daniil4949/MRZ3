@@ -7,62 +7,118 @@
 
 import numpy as np
 
-
 def leaky_relu(x, alpha=0.01):
     return np.where(x > 0, x, alpha * x)
 
 
-def dleaky_relu(x, alpha=0.01):
+def d_leaky_relu(x, alpha=0.01):
     return np.where(x > 0, 1, alpha)
 
 
-def step(n):
-    return n ** 2
-
-
 class JordanNetwork:
-    def __init__(self, *args, scale_k=100, activation=leaky_relu, d_activation=dleaky_relu):
-        self.scale_k = scale_k
-        self.shape = args
-        self.activation = activation
-        self.d_activation = d_activation
-        self.layers = [np.ones(self.shape[0] + self.shape[-1])]
-        self.layers.extend(np.ones(shape) for shape in self.shape[1:])
-        self.context = np.zeros(self.shape[-1])
-        self.weights = [
-            np.random.uniform(-1, 1, (self.layers[i].size, self.layers[i + 1].size))
-            for i in range(len(self.shape) - 1)
-        ]
-        self.dw = [np.zeros_like(weight) for weight in self.weights]
+    def __init__(self, input_size, hidden_size, output_size, learning_rate=1e-2, seed=42, alpha=0.01):
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.output_size = output_size
+        self.lr = learning_rate
+        self.alpha = alpha
 
-    def propagate_forward(self, data):
-        data = data / self.scale_k
-        self.layers[0][:self.shape[0]] = data
-        self.layers[0][self.shape[0]:] = self.context
-        for i in range(1, len(self.shape)):
-            self.layers[i] = self.activation(np.dot(self.layers[i - 1], self.weights[i - 1]))
-        self.context = self.layers[-1]
-        return self.layers[-1] * self.scale_k
+        np.random.seed(seed)
 
-    def propagate_backward(self, target, lrate=0.1, momentum=0.1):
-        target = target / self.scale_k
-        deltas = []
-        error = target - self.layers[-1]
-        delta = error * self.d_activation(self.layers[-1])
-        deltas.append(delta)
-        for i in range(len(self.shape) - 2, 0, -1):
-            delta = np.dot(deltas[0], self.weights[i].T) * self.d_activation(self.layers[i])
-            deltas.insert(0, delta)
-        for i, (layer, delta) in enumerate(zip(self.layers[:-1], deltas)):
-            dw = np.dot(np.atleast_2d(layer).T, np.atleast_2d(delta))
-            self.weights[i] += lrate * dw + momentum * self.dw[i]
-            self.dw[i] = dw
-        return (error ** 2).sum()
+        self.W_ih = np.random.randn(hidden_size, input_size) * np.sqrt(2. / input_size)
+        self.W_cy = np.random.randn(hidden_size, output_size) * np.sqrt(2. / output_size)
+        self.W_hy = np.random.randn(output_size, hidden_size) * np.sqrt(2. / hidden_size)
 
+        self.b_h = np.zeros((hidden_size, 1))
+        self.b_y = np.zeros((output_size, 1))
 
-def generate_train_matrix(sequence_function, rows, cols):
-    return np.array([[sequence_function(j + i) for j in range(cols)] for i in range(rows)])
+    def forward(self, x, context):
+        self.x = x
+        self.context = context
 
+        # Скрытое состояние
+        self.h_raw = np.dot(self.W_ih, self.x) + np.dot(self.W_cy, self.context) + self.b_h
+        self.h = leaky_relu(self.h_raw, self.alpha)
 
-def generate_train_matrix_result(sequence_function, rows, offset, cols):
-    return np.array([[sequence_function(j + i + offset) for j in range(cols)] for i in range(rows)])
+        # Выход
+        self.y_raw = np.dot(self.W_hy, self.h) + self.b_y
+        self.y = self.y_raw  # линейный выход
+
+        return self.y, self.h
+
+    def backward(self, dy):
+        dW_hy = np.dot(dy, self.h.T)
+        db_y = dy
+
+        dh = np.dot(self.W_hy.T, dy) * d_leaky_relu(self.h_raw, self.alpha)
+        dW_ih = np.dot(dh, self.x.T)
+        dW_cy = np.dot(dh, self.context.T)
+        db_h = dh
+
+        self.W_hy -= self.lr * dW_hy
+        self.b_y -= self.lr * db_y
+        self.W_ih -= self.lr * dW_ih
+        self.W_cy -= self.lr * dW_cy
+        self.b_h -= self.lr * db_h
+
+    def train(self, X, Y, max_epochs=10000, target_loss=1e-8):
+        losses = []
+
+        for epoch in range(max_epochs):
+            total_loss = 0
+            for i in range(len(X)):
+                context = np.zeros((self.output_size, 1))
+
+                window = X[i]
+                target = np.array([[Y[i]]])
+
+                for t in range(len(window)):
+                    x = np.array([[window[t]]])
+                    output, _ = self.forward(x, context)
+                    context = output
+
+                loss = np.mean((output - target) ** 2)
+                total_loss += loss
+
+                dy = 2 * (output - target) / output.size
+
+                self.backward(dy)
+
+            avg_loss = total_loss / len(X)
+            losses.append(avg_loss)
+
+            if (epoch + 1) % 100 == 0 or epoch == 0:
+                print(f'Epoch {epoch + 1}/{max_epochs}, Loss: {avg_loss:.6f}')
+
+            if avg_loss <= target_loss:
+                print("Достигнут целевой уровень ошибки. Остановка обучения.")
+                break
+
+        return losses
+
+    def predict(self, initial_window, predict_steps, window_size):
+        """
+        Прогнозирование следующих значений.
+        initial_window: список или массив длиной window_size
+        predict_steps: сколько значений хотим спрогнозировать
+        """
+        # Преобразуем initial_window в список, если это не так
+        if isinstance(initial_window, np.ndarray):
+            window = initial_window.copy().tolist()
+        else:
+            window = initial_window.copy()
+
+        predictions = []
+        context = np.zeros((self.output_size, 1))
+
+        for step in range(predict_steps):
+            for x_val in window[-window_size:]:
+                x_input = np.array([[x_val]])
+                output, _ = self.forward(x_input, context)
+                context = output
+
+            pred = output.item()
+            predictions.append(pred)
+            window.append(pred)
+
+        return predictions
