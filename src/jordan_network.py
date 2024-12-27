@@ -66,7 +66,6 @@ class JordanNetwork:
         context = np.zeros((self.output_size, 1))
 
         for epoch in range(max_epochs):
-            total_loss = 0
             for i in range(len(X)):
                 window = X[i]
                 target = np.array([[Y[i]]])
@@ -75,9 +74,6 @@ class JordanNetwork:
                     x = np.array([[window[t]]])
                     output, _ = self.forward(x, context)
                     context = output
-
-                loss = np.mean((output - target) ** 2)
-                total_loss += loss
 
                 dy = 2 * (output - target) / output.size
 
@@ -85,13 +81,7 @@ class JordanNetwork:
 
             total_loss = 0
             for i in range(len(X)):
-                window = X[i]
                 target = np.array([[Y[i]]])
-
-                for t in range(len(window)):
-                    x = np.array([[window[t]]])
-                    output, _ = self.forward(x, context)
-                    context = output
 
                 loss = np.mean((output - target) ** 2)
                 total_loss += loss

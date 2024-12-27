@@ -67,7 +67,6 @@ if __name__ == '__main__':
     sequence_norm, mean, std = normalize(sequence)
     window_size = 5
     X, Y = create_dataset(sequence_norm, window_size)
-    print("\nПримеры входных данных и  ожидаемых значений:")
     net = JordanNetwork(input_size=1, hidden_size=20, output_size=1, learning_rate=1e-4, alpha=0.01)
     losses = net.train(X, Y, max_epochs=3000, target_loss=1e-8)
 
