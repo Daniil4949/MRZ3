@@ -83,6 +83,19 @@ class JordanNetwork:
 
                 self.backward(dy)
 
+            total_loss = 0
+            for i in range(len(X)):
+                window = X[i]
+                target = np.array([[Y[i]]])
+
+                for t in range(len(window)):
+                    x = np.array([[window[t]]])
+                    output, _ = self.forward(x, context)
+                    context = output
+
+                loss = np.mean((output - target) ** 2)
+                total_loss += loss
+
             avg_loss = total_loss / len(X)
             losses.append(avg_loss)
 
